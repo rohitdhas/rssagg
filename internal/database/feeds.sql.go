@@ -21,7 +21,7 @@ type CreateFeedParams struct {
 	ID     uuid.UUID
 	Name   string
 	Url    string
-	UserID uuid.NullUUID
+	UserID uuid.UUID
 }
 
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
@@ -47,7 +47,7 @@ const getFeedByUser = `-- name: GetFeedByUser :one
 SELECT id, name, url, user_id, created_at, updated_at FROM feeds WHERE user_id = $1
 `
 
-func (q *Queries) GetFeedByUser(ctx context.Context, userID uuid.NullUUID) (Feed, error) {
+func (q *Queries) GetFeedByUser(ctx context.Context, userID uuid.UUID) (Feed, error) {
 	row := q.db.QueryRowContext(ctx, getFeedByUser, userID)
 	var i Feed
 	err := row.Scan(

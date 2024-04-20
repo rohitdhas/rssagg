@@ -7,3 +7,6 @@ RETURNING *;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = $1;
+
+-- name: GetUserByApiKey :one
+SELECT * FROM users WHERE api_key = $1;

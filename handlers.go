@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rohitdhas/rssagg/internal"
-	"github.com/rohitdhas/rssagg/internal/auth"
 	"github.com/rohitdhas/rssagg/internal/database"
 )
 
@@ -48,44 +47,43 @@ func (apiCfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		internal.RespondWithError(w, 500, fmt.Sprintf("Error creating user: %v", err))
+		return
 	}
 
 	internal.RespondWithJson(w, 200, databaseUserToUser(user))
 }
 
-func (apiCfg *apiConfig) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := auth.GetApiKey(r.Header)
+func (apiCfg *apiConfig) handleGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	internal.RespondWithJson(w, 200, databaseUserToUser(user))
+}
 
-	if err != nil {
-		internal.RespondWithError(w, 403, fmt.Sprintf("Auth error: %v", err))
-		return
-	}
-
+func (apiCfg *apiConfig) handleCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type params struct {
-		Email string `json:"email"`
+		Name string `json:"name"`
+		Url  string `json:"url"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 
 	reqParams := params{}
-	err = decoder.Decode(&reqParams)
+	err := decoder.Decode(&reqParams)
 
 	if err != nil {
 		internal.RespondWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
 		return
 	}
 
-	user, err := apiCfg.DB.GetUserByEmail(r.Context(), reqParams.Email)
+	feed, err := apiCfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+		ID:     uuid.New(),
+		Name:   reqParams.Name,
+		Url:    reqParams.Url,
+		UserID: user.ID,
+	})
 
 	if err != nil {
-		internal.RespondWithError(w, 403, fmt.Sprintf("Error fetching user: %v", err))
+		internal.RespondWithError(w, 500, fmt.Sprintf("Error creating feed: %v", err))
 		return
 	}
 
-	if user.ApiKey != apiKey {
-		internal.RespondWithError(w, 403, "Invalid api_key")
-		return
-	}
-
-	internal.RespondWithJson(w, 200, databaseUserToUser(user))
+	internal.RespondWithJson(w, 200, databaseFeedToFeed(feed))
 }
